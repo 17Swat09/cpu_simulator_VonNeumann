@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@pddring" />
+    <meta name="twitter:title" content="OCR A Level CPU Simulator" />
+    <meta name="twitter:description" content="Simulate and understand the fetch decode execute cycle" />
+    <meta name="twitter:image" content="https://tools.withcode.uk/cpu/thumb.jpg" />
+    
+    <meta property="og:title" content="OCR A Level CPU Simulator" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tools.withcode.uk/cpu" />
+    <meta property="og:description" content="Simulate and understand the fetch decode execute cycle" />
+    <meta property="og:image" content="https://tools.withcode.uk/cpu/thumb.jpg" />
+
+<title>OCR A Level CPU simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=VT323" rel="stylesheet">
+<link rel="stylesheet" href="media/styles.css">
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="lib/cpu.js"></script>
+<script type="text/javascript" src="lib/raphael.min.js"></script>
+<script type="text/javascript" src="//platform-api.sharethis.com/js/sharethis.js#property=5989cbc50bf9cd001279351d&product=sticky-share-buttons"></script>
+
+</head>
+<body>
+
+<div class="box">
+<h1><i class="fa fa-microchip"></i> Simulador CPU</h1>
+<div>Esta herramienta está diseñada para simular los registros y buses dentro de una CPU Von Neumann para las personas que estudian un nivel A de Ciencias de la Computación (OCR Exam board)</div>
+<div>Está diseñado como una ayuda visual para recorrer cada etapa del <a href="https://student.craigndave.org/videos/ocr-alevel-slr01-fetch-decode-execute-cycle" target="_blank">ciclo buscar-decodificar-ejecutar</a> para que pueda ver el propósito de cada <a href="https://student.craigndave.org/videos/ocr-alevel-slr01-alu-cu-registers-and-buses" target="_blank">registro y bus dentro de la CPU</a>. La estructura de la CPU está diseñada para parecerse a la que aparece en los vídeos de Craig'n'Dave, que utiliza una versión binaria del <a href="https://en.wikipedia.org/wiki/Little_man_computer" target="_blank">conjunto de instrucciones LMC</a></div>
+
+</div>
+
+<div id="options" class="box">
+<h2><i class="fa fa-cog"></i> Ajustes</h2>
+Mostrar valores como: 
+<div class="btn-group" role="group" aria-label="Number base">
+<button type="button" class="btn btn_values btn-secondary" id="btn_values_binary"><i class="fa fa-barcode"></i> Binario</button>
+<button type="button" class="btn btn_values btn-secondary" id="btn_values_denary"><i class="fa fa-calculator"></i> Decimal</button>
+<button type="button" class="btn btn_values btn-secondary" id="btn_values_hex"><i class="fa fa-hashtag"></i> Hex</button>
+</div>
+
+<div class="btn-group" role="group" aria-label="Reset">
+<button type="button" class="btn btn_values btn-secondary" id="btn_reset_ram"><i class="fa fa-undo"></i> Restablecer RAM</button>
+<button type="button" class="btn btn_values btn-secondary" id="btn_reset_cpu"><i class="fa fa-undo"></i> Restablecer CPU</button>
+</div>
+
+<button type="button" class="btn btn-secondary" id="btn_examples" data-toggle="modal" data-target="#modal_examples"><i class="fa fa-thumbs-up"></i> Ejemplos</button>
+
+<button type="button" class="btn btn-secondary" id="btn_import_export" data-toggle="modal" data-target="#modal_export"><i class="fa fa-save"></i> Importar / Exportar</button>
+
+<button type="button" class="btn btn-secondary" id="btn_share"><i class="fa fa-share"></i> Compartir</button>
+
+<span class="form-group">
+  <label for="run_speed">Velocidad de ejecución:
+  <select class="form-control" id="run_speed">
+    <option value="10">Turbo (100 Hz)</option>
+    <option value="10">Rápido (2 Hz)</option>
+    <option value="10" selected>Normal (1 Hz)</option>
+    <option value="10">Despacio (0.5 Hz)</option>
+    <option value="10">Lento (0.2 Hz)</option>
+  </select>
+  </label>
+</span>
+
+<div id="run_buttons" class="btn-group" role="group" aria-label="Run">
+<button type="button" class="btn btn-secondary" id="btn_step"><i class="fa fa-step-forward"></i> Pasos</button>
+<button type="button" class="btn btn-secondary" id="btn_run"><i class="fa fa-play"></i> Ejecutar</button>
+</div>
+
+<button type="button" class="btn btn-secondary" id="btn_toggle_hint"><i class="fa fa-lightbulb-o"></i></button>
+<div id="hint"><span id="hint_text">Pulse el botón de pasos para ver cada etapa del ciclo de búsqueda, decodificación y ejecución</span></div>
+</div>
+
+<div id="cpu" class="box">
+</div>
+
+
+<div id="modal_change_value" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id="modal_change_value_title">Cambiar valor</h4>
+      </div>
+      <div class="modal-body">
+        <p>Cambiar valor de: <span id="change_value_from"></span> a <input type="text" class="form-control edit-text" id="change_value_to"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn_change_value_ok" class="btn btn-default" data-dismiss="modal"><i class="fa fa-check"></i> OK</button>
+        <button type="button" class="btn" data-dismiss="modal"><i class="fa fa-close"></i> Cancelar</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="modal_export" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id="modal_change_value_title">Copiar y pegar el código hexadecimal del programa</h4>
+      </div>
+      <div class="modal-body">
+        <textarea id="export_hex" class="form-control" rows="5"></textarea>
+      </div>
+      <div class="modal-footer">
+                <button type="button" id="btn_export" class="btn btn-default" data-dismiss="modal"><i class="fa fa-share"></i> Exportar</button>
+                <button type="button" id="btn_import" class="btn btn-default" data-dismiss="modal"><i class="fa fa-check"></i> Importar</button>
+        <button type="button" class="btn" data-dismiss="modal"><i class="fa fa-close"></i> Cancelar</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="modal_examples" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title" id="modal_change_value_title">Ejemplos de proyectos</h4>
+      </div>
+      <div class="modal-body">
+        <ol>
+        <li><a href="?ram=00000000000000000000000000000000">Proyecto en blanco</a></li>
+        <li><a href="?ram=913f911f920000000000000000000000">Suma dos números</a></li>
+        <li><a href="?ram=913f913e2f895f92005e920000000000">Encuentra el mayor de dos números</a></li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn_import" class="btn btn-default" data-dismiss="modal"><i class="fa fa-check"></i> Importar</button>
+        <button type="button" class="btn" data-dismiss="modal"><i class="fa fa-close"></i> Cancelar</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="box text-center">Esta herramienta ha sido elaborada por P.Dring en la Escuela Fulford. Por favor, <a href="http://blog.withcode.uk/about/contact/">contacte conmigo</a> si tiene alguna duda o detecta algún fallo. Esta herramienta ha sido editada por D.Pérez en la Escuela IES El Rincón.</div>
+</body>
+</html>
